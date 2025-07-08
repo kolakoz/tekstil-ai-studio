@@ -1,0 +1,111 @@
+.context-menu {
+  position: fixed;
+  background-color: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  list-style: none;
+  padding: 5px 0;
+  margin: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+.context-menu li {
+  padding: 8px 15px;
+  cursor: pointer;
+  color: #eee;
+  font-size: 0.9em;
+}
+.context-menu li:hover:not(.disabled) {
+  background-color: #555;
+}
+.context-menu li.disabled {
+  color: #777;
+  cursor: not-allowed;
+}
+
+.result-card .info .name {
+  font-size: 0.8em;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+  flex-grow: 1;
+}
+
+/* Modal Overlay */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal Content */
+.image-modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+
+/* Modal Image */
+.modal-image {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Close Button */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.modal-close:hover {
+  background: #cc0000;
+}
+
+/* Modal Info */
+.modal-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.modal-info h3 {
+  margin: 10px 0;
+}
+
+.modal-info button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-info button:hover {
+  background: #0056b3;
+} 

@@ -1,0 +1,12 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+
+# Webpack output
+dev-build/
+
+# OS files
+.DS_Store
+Thumbs.db 
