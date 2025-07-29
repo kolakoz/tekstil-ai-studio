@@ -1,0 +1,164 @@
+{
+  "name": "tekstil-ai-studio-offline",
+  "productName": "Tekstil AI Studio (Offline Edition)",
+  "version": "0.1.0",
+  "description": "Yerel disk üzerinde görsel arama ve font tanıma yapabilen tamamen offline Electron uygulaması.",
+  "author": "",
+  "license": "MIT",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "webpack serve --config webpack.config.js",
+    "build": "NODE_ENV=production webpack --config webpack.config.js --mode production",
+    "build-win": "set NODE_ENV=production && webpack --config webpack.config.js --mode production",
+    "electron": "set NODE_ENV=production && electron .",
+    "electron-dev": "set NODE_ENV=development && electron . --args=--url=http://localhost:3002",
+    "dev": "npx kill-port 3002 && cross-env PORT=3002 concurrently \"npm start\" \"wait-on http://localhost:%PORT% && npm run electron-dev\"",
+    "dev-win": "npx kill-port 3002 && cross-env PORT=3002 concurrently \"npm start\" \"wait-on http://localhost:%PORT% && set NODE_ENV=development && electron .\"",
+    "dist": "npm run build && electron-builder",
+    "dist-win": "npm run build && electron-builder --win",
+    "dist-mac": "npm run build && electron-builder --mac",
+    "dist-linux": "npm run build && electron-builder --linux",
+    "dist-portable": "npm run build && electron-builder --win portable",
+    "electron-rebuild": "npx @electron/rebuild --force --parallel",
+    "lint": "eslint . --ext .js,.jsx",
+    "format": "prettier --write .",
+    "dl-model": "curl -fL -o electron/models/mobilenetv2.onnx https://github.com/onnx/models/raw/main/validated/vision/classification/mobilenet/model/mobilenetv2-7.onnx || curl -fL -o electron/models/mobilenetv2.onnx https://media.githubusercontent.com/media/onnx/models/main/validated/vision/classification/mobilenet/model/mobilenetv2-7.onnx || curl -fL -o electron/models/mobilenetv2.onnx https://cdn.jsdelivr.net/gh/onnx/models@main/validated/vision/classification/mobilenet/model/mobilenetv2-7.onnx",
+    "automation": "node scripts/electron-automation.js",
+    "auto-build": "node scripts/electron-automation.js build",
+    "auto-test": "node scripts/electron-automation.js test",
+    "auto-monitor": "node scripts/electron-automation.js monitor",
+    "auto-full": "node scripts/electron-automation.js full",
+    "installer": "node scripts/installer.js",
+    "uninstall": "node scripts/installer.js uninstall",
+    "test-installation": "node scripts/test-installation.js",
+    "customer-package": "node scripts/create-customer-package.js",
+    "create-customer-package": "node scripts/create-customer-package.js"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "electron-store": "^8.2.0",
+    "express": "^5.1.0",
+    "imghash": "^0.0.9",
+    "lru-cache": "^11.1.0",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^2.7.0",
+    "onnxruntime-node": "^1.22.0-rev",
+    "p-queue": "^8.1.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sharp": "^0.34.2",
+    "sqlite3": "^5.1.7",
+    "tesseract.js": "^6.0.1",
+    "winston": "^3.17.0",
+    "ws": "^8.18.3",
+    "xxhash-wasm": "^1.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
+    "@electron/rebuild": "^3.2.9",
+    "babel-loader": "^9.2.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "css-loader": "^6.11.0",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.13.1",
+    "eslint": "^8.57.0",
+    "html-webpack-plugin": "^5.6.3",
+    "prettier": "^3.2.5",
+    "style-loader": "^3.3.4",
+    "wait-on": "^7.2.0",
+    "webpack": "^5.100.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.2"
+  },
+  "engines": {
+    "node": ">=18 <21",
+    "_comment": "Node.js 22 ve üzeri ile native modüller çalışmaz, lütfen Node 18 veya 20 kullanın."
+  },
+  "build": {
+    "icon": "assets/icon.ico",
+    "appId": "com.tekstilai.offline",
+    "productName": "Tekstil AI Studio (Offline Edition)",
+    "asar": false,
+    "compression": "maximum",
+    "files": [
+      "dist/*",
+      "dist/**/*",
+      "electron/**/*.js",
+      "assets/**/*",
+      "electron/models/**/*",
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!node_modules/.bin/**/*",
+      "!src/**/*",
+      "!public/**/*",
+      "!scripts/**/*",
+      "!*.md",
+      "!*.log",
+      "!debug-*.js",
+      "!fix-*.js",
+      "!node_modules/better-sqlite3/build/*.vcxproj",
+      "!node_modules/better-sqlite3/build/*.vcxproj.filters",
+      "!node_modules/better-sqlite3/build/test_extension.vcxproj",
+      "!node_modules/better-sqlite3/build/test_extension.vcxproj.filters"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/fonts-database.json",
+        "to": "fonts-database.json"
+      },
+      {
+        "from": "electron/models",
+        "to": "models"
+      }
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tekstil AI Studio",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": true,
+      "include": "installer.nsh",
+      "installerLanguages": [
+        "tr-TR"
+      ],
+      "language": "2055",
+      "warningsAsErrors": false,
+      "perMachine": true,
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.graphics-design"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png",
+      "category": "Graphics"
+    }
+  }
+}
