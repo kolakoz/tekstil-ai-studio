@@ -1,120 +1,129 @@
-const path = require('path');
-const fs = require('fs');
+/**
+ * Tekstil AI Studio - Minimal Sistem Testi
+ * 
+ * Bu dosya sistemin temel bileşenlerini test eder:
+ * - Database bağlantısı
+ * - Görsel işleme
+ * - Arama fonksiyonları
+ * - Thumbnail oluşturma
+ */
 
-// Electron app context'i simüle et
-const electron = require('electron');
-if (!electron.app) {
-  electron.app = {
-    getPath: (name) => {
-      if (name === 'userData') {
-        return path.join(__dirname, 'electron');
-      }
-      return path.join(__dirname, 'electron');
-    }
-  };
-}
+const Database = require('./electron/enhanced-database');
+const ImageProcessor = require('./electron/enhanced-image-processor');
+const FileScanner = require('./electron/file-scanner');
 
-const db = require('./electron/simple-database');
-const processor = require('./electron/simple-processor');
-const scanner = require('./electron/simple-scanner');
-
-async function testSimpleSystem() {
-  console.log('🚀 Minimal Sistem Test Başlatılıyor...');
+async function runMinimalTest() {
+  console.log('Minimal Sistem Test Başlatılıyor...');
   
   try {
-    // 1. Database test
-    console.log('\n📊 Database test ediliyor...');
-    const stats = await db.getStats();
-    console.log('✅ Database istatistikleri:', stats);
+    // Database test
+    console.log('\nDatabase test ediliyor...');
+    const db = new Database();
+    await db.initialize();
+    const stats = await db.getStatistics();
+    console.log('Database istatistikleri:', stats);
     
-    // 2. Processor test
-    console.log('\n🔄 Processor test ediliyor...');
-    const testImagePath = path.join(__dirname, 'assets', 'icon.svg');
+    // Processor test
+    console.log('\nProcessor test ediliyor...');
+    const processor = new ImageProcessor();
+    await processor.initialize();
     
-    if (fs.existsSync(testImagePath)) {
-      const imageData = await processor.processImage(testImagePath);
-      if (imageData) {
-        console.log('✅ Görsel işlendi:', imageData.filename);
-        console.log('   - Boyut:', imageData.width + 'x' + imageData.height);
-        console.log('   - pHash:', imageData.phash?.substring(0, 16) + '...');
-        console.log('   - dHash:', imageData.dhash?.substring(0, 16) + '...');
-        console.log('   - Renk:', imageData.avgColor);
-        
-        // 3. Database'e ekle
-        console.log('\n💾 Database\'e ekleniyor...');
-        const result = await db.addImage(imageData);
-        console.log('✅ Görsel eklendi, ID:', result?.lastInsertRowid);
-        
-        // 4. Arama test
-        console.log('\n🔍 Arama test ediliyor...');
-        const similar = await db.searchSimilar(imageData.phash, 5);
-        console.log(`✅ ${similar.length} benzer görsel bulundu`);
-        
-        if (similar.length > 0) {
-          similar.slice(0, 3).forEach((img, index) => {
-            console.log(`   ${index + 1}. ${img.filename} (mesafe: ${img.distance})`);
-          });
-        }
-        
-        // 5. Thumbnail test
-        console.log('\n🖼️ Thumbnail test ediliyor...');
-        const thumbnail = await processor.createThumbnailSmall(testImagePath);
-        if (thumbnail) {
-          console.log('✅ Thumbnail oluşturuldu (base64 uzunluğu:', thumbnail.length, ')');
-        }
-        
-      } else {
-        console.log('❌ Görsel işlenemedi');
-      }
-    } else {
-      console.log('⚠️ Test görseli bulunamadı:', testImagePath);
+    // Test görseli bul
+    const testImagePath = './assets/icon.svg';
+    let imageData = null;
+    
+    try {
+      imageData = await processor.processImage(testImagePath);
+      console.log('Görsel işlendi:', imageData.filename);
+      console.log('   - Boyut:', imageData.width + 'x' + imageData.height);
+      console.log('   - pHash:', imageData.phash?.substring(0, 16) + '...');
+      console.log('   - dHash:', imageData.dhash?.substring(0, 16) + '...');
+      console.log('   - Renk:', imageData.avgColor);
       
-      // Alternatif test görseli ara
-      const assetsDir = path.join(__dirname, 'assets');
+      // Database'e ekle
+      console.log('\nDatabase\'e ekleniyor...');
+      const result = await db.addImage(imageData);
+      console.log('Görsel eklendi, ID:', result?.lastInsertRowid);
+      
+      // Arama test
+      console.log('\nArama test ediliyor...');
+      const similar = await db.searchSimilar(imageData.phash, 0.8);
+      console.log(`${similar.length} benzer görsel bulundu`);
+      
+      similar.forEach((img, index) => {
+        console.log(`   ${index + 1}. ${img.filename} (mesafe: ${img.distance})`);
+      });
+      
+      // Thumbnail test
+      console.log('\nThumbnail test ediliyor...');
+      const thumbnail = await processor.createThumbnail(testImagePath, 150, 150);
+      console.log('Thumbnail oluşturuldu (base64 uzunluğu:', thumbnail.length, ')');
+      
+    } catch (error) {
+      console.log('Görsel işlenemedi');
+    }
+    
+    // Alternatif test görseli
+    if (!imageData) {
+      console.log('Test görseli bulunamadı:', testImagePath);
+      
+      // Assets klasöründe alternatif ara
+      const fs = require('fs');
+      const path = require('path');
+      const assetsDir = './assets';
+      
       if (fs.existsSync(assetsDir)) {
         const files = fs.readdirSync(assetsDir);
-        const imageFiles = files.filter(f => /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(f));
+        const imageFiles = files.filter(f => 
+          /\.(jpg|jpeg|png|gif|bmp|svg)$/i.test(f)
+        );
         
         if (imageFiles.length > 0) {
           const altImagePath = path.join(assetsDir, imageFiles[0]);
-          console.log('📸 Alternatif test görseli:', altImagePath);
+          console.log('Alternatif test görseli:', altImagePath);
           
-          const imageData = await processor.processImage(altImagePath);
-          if (imageData) {
-            console.log('✅ Alternatif görsel işlendi:', imageData.filename);
+          try {
+            imageData = await processor.processImage(altImagePath);
+            console.log('Alternatif görsel işlendi:', imageData.filename);
+          } catch (error) {
+            console.log('Alternatif görsel de işlenemedi');
           }
         }
       }
     }
     
-    // 6. Scanner test
-    console.log('\n📁 Scanner test ediliyor...');
+    // Scanner test
+    console.log('\nScanner test ediliyor...');
+    const scanner = new FileScanner();
     const supportedFormats = scanner.getSupportedFormats();
-    console.log('✅ Desteklenen formatlar:', supportedFormats);
+    console.log('Desteklenen formatlar:', supportedFormats);
     
-    // 7. Final stats
-    console.log('\n📊 Final istatistikler:');
-    const finalStats = await db.getStats();
+    // Final istatistikler
+    const finalStats = await db.getStatistics();
+    console.log('\nFinal istatistikler:');
     console.log('   - Toplam görsel:', finalStats.totalImages);
     console.log('   - Hash\'li görsel:', finalStats.withHash);
     console.log('   - Hash\'siz görsel:', finalStats.withoutHash);
     
-    console.log('\n✅ Minimal sistem test tamamlandı!');
+    console.log('\nMinimal sistem test tamamlandı!');
+    
+    // Database'i kapat
+    await db.close();
     
   } catch (error) {
-    console.error('❌ Test hatası:', error);
+    console.error('Test hatası:', error);
   }
 }
 
 // Test'i çalıştır
 if (require.main === module) {
-  testSimpleSystem().then(() => {
-    console.log('\n🎉 Tüm testler başarılı!');
+  runMinimalTest().then(() => {
+    console.log('\nTüm testler başarılı!');
     process.exit(0);
   }).catch(error => {
-    console.error('\n💥 Test başarısız:', error);
+    console.error('Test hatası:', error);
     process.exit(1);
   });
 }
 
-module.exports = { testSimpleSystem }; 
+module.exports = { runMinimalTest }; 

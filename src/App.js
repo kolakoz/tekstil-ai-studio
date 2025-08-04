@@ -1,3 +1,13 @@
+/**
+ * Tekstil AI Studio - Ana Uygulama Bileşeni
+ * 
+ * Bu bileşen uygulamanın ana mantığını yönetir:
+ * - Görsel arama ve filtreleme
+ * - Disk tarama işlemleri
+ * - Monitoring dashboard entegrasyonu
+ * - State yönetimi
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import ImageGrid from './components/ImageGrid';
@@ -10,10 +20,11 @@ import MonitoringDashboard from './components/MonitoringDashboard';
 import ProjectMonitoringDashboard from './components/ProjectMonitoringDashboard';
 
 function App() {
+  // State tanımlamaları
   const [images, setImages] = useState([]);
   const [filteredImages, setFilteredImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [loading, setLoading] = useState(true); // true olarak başlat
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, indexed: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // grid, list, masonry
@@ -27,16 +38,19 @@ function App() {
   const [showMonitoring, setShowMonitoring] = useState(false);
   const [monitoringMode, setMonitoringMode] = useState('system'); // 'system' veya 'project'
   
+  // Component mount olduğunda uygulamayı başlat
   useEffect(() => {
-    // Component mount olduğunda verileri yükle
     initializeApp();
   }, []);
 
+  /**
+   * Uygulamayı başlatır ve temel verileri yükler
+   */
   const initializeApp = async () => {
     try {
       setLoading(true);
       
-      // Sadece istatistikleri yükle, görselleri yükleme
+      // İstatistikleri yükle
       const statsResult = await window.electronAPI.getStatistics();
       if (statsResult.success) {
         setStats({
@@ -50,8 +64,6 @@ function App() {
       setImages([]);
       setFilteredImages([]);
       
-      console.log('✅ Uygulama başlatıldı - Görseller sadece arama sonuçlarında gösterilecek');
-      
     } catch (error) {
       console.error('Uygulama başlatma hatası:', error);
     } finally {
@@ -59,52 +71,44 @@ function App() {
     }
   };
 
-
-
+  /**
+   * Metin tabanlı arama işlemini gerçekleştirir
+   * @param {string} searchTerm - Aranacak metin
+   */
   const handleSearch = async (searchTerm) => {
-    console.log('🔄 handleSearch çağrıldı, searchTerm:', searchTerm);
-    setSearchTerm(searchTerm); // State'i güncelle
+    setSearchTerm(searchTerm);
     
     if (!searchTerm || searchTerm.trim() === '') {
-      console.log('⚠️ Boş arama terimi, görselleri temizliyorum');
       // Arama temizlendi - görselleri temizle
       setFilteredImages([]);
       return;
     }
     
     try {
-      console.log('🔄 Loading state true yapılıyor');
       setLoading(true);
-      console.log('🔍 Metin araması başlatılıyor:', searchTerm);
       
       // Veritabanında arama yap
-      console.log('🔄 window.electronAPI.searchByText çağrılıyor...');
       const searchResult = await window.electronAPI.searchByText(searchTerm);
-      console.log('📊 searchByText sonucu:', searchResult);
       
       if (searchResult.success) {
-        console.log(`✅ ${searchResult.images.length} sonuç bulundu`);
-        console.log('🔍 Bulunan görseller:', searchResult.images.map(img => ({
-          filename: img.filename,
-          hasThumbnail: !!img.thumbnail,
-          thumbnailLength: img.thumbnail ? img.thumbnail.length : 0
-        })));
         setFilteredImages(searchResult.images);
-        console.log('✅ filteredImages state güncellendi');
       } else {
-        console.error('❌ Arama hatası:', searchResult.error);
+        console.error('Arama hatası:', searchResult.error);
         setFilteredImages([]);
       }
       
     } catch (error) {
-      console.error('❌ Arama hatası:', error);
+      console.error('Arama hatası:', error);
       setFilteredImages([]);
     } finally {
-      console.log('🔄 Loading state false yapılıyor');
       setLoading(false);
     }
   };
 
+  /**
+   * Görsel tabanlı arama işlemini başlatır
+   * @param {Object} imageData - Aranacak görsel verisi
+   */
   const handleImageSearch = async (imageData) => {
     if (!imageData) {
       // Görsel temizlendi
@@ -114,41 +118,45 @@ function App() {
     }
 
     try {
-      console.log('🔍 Görsel arama başlatılıyor...', imageData);
-      
-      // Direkt disk seçme modalını aç
+      // Disk seçme modalını aç
       setSearchImage(imageData);
       setSearchScopeOpen(true);
       
     } catch (error) {
-      console.error('❌ Görsel arama hatası:', error);
+      console.error('Görsel arama hatası:', error);
       alert('Arama sırasında hata oluştu: ' + error.message);
     }
   };
 
+  /**
+   * Arama kapsamı onaylandığında sonuçları işler
+   * @param {Object} result - Arama sonucu
+   */
   const handleSearchScopeConfirm = async (result) => {
     try {
       setLoading(true);
       setSearchScopeOpen(false);
       
       if (result.success) {
-        console.log('✅ Arama tamamlandı:', result.count, 'sonuç');
-        console.log('🔍 Aranan diskler:', result.searchedDrives);
         setFilteredImages(result.images);
         setCurrentPage(1);
         setTotalPages(Math.ceil(result.count / imagesPerPage));
       } else {
-        console.error('❌ Arama hatası:', result.error);
+        console.error('Arama hatası:', result.error);
         alert('Arama sırasında hata oluştu: ' + result.error);
       }
     } catch (error) {
-      console.error('❌ Arama sonucu işleme hatası:', error);
+      console.error('Arama sonucu işleme hatası:', error);
       alert('Arama sonucu işlenirken hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Görsel seçildiğinde benzer görselleri bulur
+   * @param {Object} image - Seçilen görsel
+   */
   const handleImageSelect = async (image) => {
     setSelectedImage(image);
     setSidebarOpen(true);
@@ -167,13 +175,14 @@ function App() {
     }
   };
 
+  /**
+   * Akıllı disk tarama işlemini başlatır
+   */
   const handleScan = async () => {
     setLoading(true);
     setSidebarOpen(true);
     
     try {
-      console.log('🔍 Akıllı tarama başlatılıyor...');
-      
       // Mevcut diskleri al
       const drivesResult = await window.electronAPI.listDrives();
       if (!drivesResult.success) {
@@ -181,7 +190,6 @@ function App() {
       }
       
       const drives = drivesResult.drives.map(d => d.letter);
-      console.log('💿 Taranacak diskler:', drives);
       
       // Akıllı taramayı başlat
       const result = await window.electronAPI.scanDrives({
@@ -191,10 +199,8 @@ function App() {
       
       if (result.success) {
         if (result.skipped) {
-          console.log('✅ Tarama atlandı:', result.reason);
           alert(`Tarama atlandı: ${result.reason === 'up_to_date' ? 'Veritabanı güncel' : result.reason}`);
         } else {
-          console.log('✅ Tarama tamamlandı:', result.totalStats);
           alert(`Tarama tamamlandı!\nYeni: ${result.totalStats.newFiles}\nGüncellenen: ${result.totalStats.updatedFiles}\nSilinen: ${result.totalStats.deletedFiles}`);
         }
         
@@ -205,44 +211,32 @@ function App() {
       }
       
     } catch (error) {
-      console.error('❌ Tarama hatası:', error);
+      console.error('Tarama hatası:', error);
       alert('Tarama sırasında hata oluştu: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Yeni görseller eklendiğinde otomatik arama başlatır
+   * @param {Array} newImages - Eklenen görseller
+   */
   const handleImagesAdded = (newImages) => {
-    console.log('🔄 handleImagesAdded çağrıldı:', newImages);
-    
     if (newImages && Array.isArray(newImages) && newImages.length > 0) {
-      console.log('✅ Geçerli görseller alındı, sayı:', newImages.length);
-      
-      // Eklenen ilk görselin adını otomatik olarak arama çubuğuna yaz ve arama fonksiyonunu tetikle
+      // Eklenen ilk görselin adını otomatik olarak arama çubuğuna yaz
       const firstImage = newImages[0];
-      console.log('🔍 İlk görsel:', firstImage);
       
       if (firstImage && firstImage.filename) {
-        console.log('🔍 Eklenen görsel için otomatik arama başlatılıyor:', firstImage.filename);
-        setSearchTerm(firstImage.filename); // State'i güncelle
-        console.log('✅ searchTerm state güncellendi:', firstImage.filename);
-        
-        // Arama fonksiyonunu çağır
-        console.log('🔄 handleSearch fonksiyonu çağrılıyor...');
-        handleSearch(firstImage.filename); // Arama fonksiyonunu çağır
-        console.log('✅ handleSearch fonksiyonu çağrıldı');
-      } else {
-        console.warn('⚠️ İlk görselde filename yok:', firstImage);
+        setSearchTerm(firstImage.filename);
+        handleSearch(firstImage.filename);
       }
       
       setImages(prev => [...newImages, ...prev]);
       setFilteredImages(prev => [...newImages, ...prev]);
-      console.log('✅ State güncellemeleri tamamlandı');
       
       // İstatistikleri güncelle
       initializeApp();
-    } else {
-      console.warn('⚠️ Geçersiz görsel verisi:', newImages);
     }
   };
 

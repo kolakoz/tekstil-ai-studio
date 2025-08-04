@@ -1,3 +1,13 @@
+/**
+ * Tekstil AI Studio - Electron Ana Süreç
+ * 
+ * Bu dosya Electron uygulamasının ana sürecini yönetir:
+ * - Ana pencere oluşturma
+ * - Monitoring sistemi başlatma
+ * - Worker Pool yönetimi
+ * - IPC handler'ları yükleme
+ */
+
 const { app, BrowserWindow, protocol, ipcMain, session } = require('electron');
 const path = require('path');
 const isDev = !app.isPackaged;
@@ -16,6 +26,9 @@ const WorkerPool = require('./workers/worker-pool');
 let monitoring = null;
 let workerPool = null;
 
+/**
+ * Ana pencereyi oluşturur ve yapılandırır
+ */
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
 
@@ -50,7 +63,6 @@ function createWindow() {
   
   if (isDev) {
     // Geliştirme modunda React dev server'ı kullan
-    console.log('🌐 React dev server URL:', appUrl);
     mainWindow.loadURL(appUrl);
     // Sadece development'ta DevTools aç
     mainWindow.webContents.openDevTools();
@@ -76,12 +88,12 @@ function createWindow() {
   
   // Sayfa yükleme hatalarını yakala
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.error('❌ Sayfa yükleme hatası:', errorCode, errorDescription, validatedURL);
+    console.error('Sayfa yükleme hatası:', errorCode, errorDescription, validatedURL);
   });
   
   // Sayfa yüklendiğinde
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('✅ Sayfa başarıyla yüklendi');
+    console.log('Sayfa başarıyla yüklendi');
   });
 
   // Simple IPC handler'larını yükle
@@ -91,27 +103,30 @@ function createWindow() {
   ipcHandlers(mainWindow);
 }
 
+/**
+ * Uygulama hazır olduğunda çalışır
+ */
 app.whenReady().then(async () => {
   // Monitoring'i başlat
   try {
     monitoring = new TekstilMonitoring(monitoringConfig);
     await monitoring.start();
-    console.log('✅ Monitoring başarıyla başlatıldı');
+    console.log('Monitoring başarıyla başlatıldı');
 
     // Monitoring event'lerini dinle
     monitoring.on('alert', (alert) => {
-      console.log('🚨 Monitoring Alert:', alert.message);
+      console.log('Monitoring Alert:', alert.message);
     });
 
     monitoring.on('system-metrics', (metrics) => {
-      console.log('📊 Sistem metrikleri:', {
+      console.log('Sistem metrikleri:', {
         memory: `${metrics.memory.usage.toFixed(2)}%`,
         cpu: `${metrics.cpu.usage.toFixed(2)}%`
       });
     });
 
   } catch (error) {
-    console.error('❌ Monitoring başlatma hatası:', error);
+    console.error('Monitoring başlatma hatası:', error);
   }
 
   // Worker Pool'u başlat
@@ -123,19 +138,19 @@ app.whenReady().then(async () => {
     });
     
     global.workerPool = workerPool;
-    console.log('✅ Worker Pool başarıyla başlatıldı');
+    console.log('Worker Pool başarıyla başlatıldı');
 
     // Worker Pool event'lerini dinle
     workerPool.on('taskCompleted', (result) => {
-      console.log('✅ Worker görevi tamamlandı:', result.taskType);
+      console.log('Worker görevi tamamlandı:', result.taskType);
     });
 
     workerPool.on('workerError', (error) => {
-      console.error('❌ Worker hatası:', error);
+      console.error('Worker hatası:', error);
     });
 
   } catch (error) {
-    console.error('❌ Worker Pool başlatma hatası:', error);
+    console.error('Worker Pool başlatma hatası:', error);
   }
 
   // CSP header'larını devre dışı bırak
@@ -165,14 +180,17 @@ app.whenReady().then(async () => {
   });
 });
 
+/**
+ * Tüm pencereler kapandığında çalışır
+ */
 app.on('window-all-closed', async () => {
   // Monitoring'i durdur
   if (monitoring) {
     try {
       await monitoring.stop();
-      console.log('✅ Monitoring durduruldu');
+      console.log('Monitoring durduruldu');
     } catch (error) {
-      console.error('❌ Monitoring durdurma hatası:', error);
+      console.error('Monitoring durdurma hatası:', error);
     }
   }
 
@@ -180,9 +198,9 @@ app.on('window-all-closed', async () => {
   if (workerPool) {
     try {
       await workerPool.shutdown();
-      console.log('✅ Worker Pool durduruldu');
+      console.log('Worker Pool durduruldu');
     } catch (error) {
-      console.error('❌ Worker Pool durdurma hatası:', error);
+      console.error('Worker Pool durdurma hatası:', error);
     }
   }
   
